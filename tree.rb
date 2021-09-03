@@ -61,19 +61,117 @@ class Tree
     end
   end
 
+  # traverses tree via breadth-first level
+  # ... order
+  # @return [Array] all the values of the tree
+  def level_order_iter
+    que = [@root]
+    values = []
+
+    until stack.empty?
+      curr_node = stack.shift
+      que << curr_node.left unless curr_node.left.nil?
+      que << curr_node.right unless curr_node.right.nil?
+
+      que << curr_node.data unless curr_node.data.nil?
+    end
+
+    values
+  end
+
+  # traverses inorder left root right
+  # @param root [Node] root node
+  def inorder(node = @root)
+    return [] if node.nil?
+
+    [inorder(node.left), node.data, inorder(node.right)].flatten
+  end
+
+  # preorder traversal root, right, left
+  def preorder(node = @root)
+    return [] if node.nil?
+
+    [node.data, inorder(node.right), inorder(node.left)].flatten
+  end
+
+  # postorder traversal left, right, root
+  def postorder(node = @root)
+    return [] if node.nil?
+
+    [inorder(node.left), inorder(node.right), node.data].flatten
+  end
+
+  def height(node = @root)
+    return 0 if node.nil?
+    return 0 if node.leaf?
+
+    cummulative_height = 1
+    right_height = height(node.right)
+    left_height = height(node.left)
+
+    right_height >= left_height ? cummulative_height + right_height : cummulative_height + left_height
+  end
+
+  # assuming node exist within tree
+  # @param node [Node]
+  def depth(node)
+    node = Node.new(data: node) unless node.is_a?(Node)
+    curr_node = @root
+    depth = 0
+
+    until node == curr_node
+      curr_node = node < curr_node ? curr_node.left : curr_node.right
+      depth += 1
+    end
+
+    depth
+  end
+
+  # @param node [Node]
+  def balanced?(node = @root)
+    return true if node.nil?
+
+    left = node.left
+    right = node.right
+
+    height_dif = (height(left) - height(right)).abs
+
+    if height_dif > 1
+      false
+    else
+      true && balanced?(left) && balanced?(right)
+    end
+  end
+
+  def rebalance
+    @root = build_tree(inorder)
+
+    return 'balanced'
+  end
+
+  def pretty_print(node = @root, prefix = '', is_left = true)
+    pretty_print(node.right, "#{prefix}#{is_left ? '│   ' : '    '}", false) if node.right
+    puts "#{prefix}#{is_left ? '└── ' : '┌── '}#{node.data}"
+    pretty_print(node.left, "#{prefix}#{is_left ? '    ' : '│   '}", true) if node.left
+  end
+
   private
 
   def build_tree(array)
-    return Node.new(data: array[0]) if array.size == 1
+    case array.size
+    when nil then nil
+    when 1 then Node.new(data: array[0])
+    when 2 then Node.new(data: array[1], left: build_tree([array[0]]))
+    else
+      array.sort!
+      array.uniq! unless array.uniq.nil?
 
-    array.sort!
-    array.uniq! unless array.uniq.nil?
+      median = array.size / 2
 
-    median = array.size / 2
-
-    Node.new(data: array[median],
-             left: build_tree(array[0...median]),
-             right: build_tree(array[median + 1..-1]))
+      Node.new(data: array[median],
+               left: build_tree(array[0...median]),
+               right: build_tree(array[median + 1..-1]))
+    end
   end
 
   # gets the median of an array
@@ -89,7 +187,22 @@ class Tree
 end
 
 def main
-  a = Tree.new([1, 2, 3, 4, 5, 6, 7])
-  binding.pry
+  t = Tree.new(Array.new(15) { rand(1..100) })
+
+  puts "2. t balanced: #{t.balanced?} \n "
+  puts "3. \n #{t.preorder} \n #{t.postorder}  \n #{t.inorder}"
+  Array.new(12) {rand(1..15)}.each do |el|
+    t.insert(value: el)
+  end
+  puts "did insertions \n "
+
+  puts "5. t balanced: #{t.balanced?} \n "
+
+  t.rebalance
+  puts "rebalanced \n"
+
+  puts "6. t balanced: #{t.balanced?} \n "
+
+  puts "8. \n #{t.preorder} \n #{t.postorder}  \n #{t.inorder}"
 end
 main
